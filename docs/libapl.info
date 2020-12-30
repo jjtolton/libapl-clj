@@ -1,0 +1,445 @@
+This is libapl.info, produced by makeinfo version 5.2 from libapl.texi.
+
+INFO-DIR-SECTION GNU programming tools
+START-INFO-DIR-ENTRY
+* libAPL: (libapl).            call the GNU APL interpreter.
+
+END-INFO-DIR-ENTRY
+
+
+File: libapl.info,  Node: Top,  Next: Vague details of the GNU APL implementation,  Up: (dir)
+
+libAPL
+******
+
+libapl is a C library, kindly contributed to the GNU APL project by Dr.
+Dirk Laurie, that gives C programs access to GNU APL.
+
+Almost everything that a user can do interactively with GNU APL can also
+be done programmatically with libapl.  You can )LOAD and )SAVE
+workspaces, evaluate APL expression, create Variables, and even call APL
+primitives directly with values originating from in your C code.
+
+The main facilities provided by libapl are listed in the following.
+
+Some functions come in two flavours: one whose argument is a
+(0-terminated and UTF8-encoded) C-strings (that is, a const char *) and
+one whose argument is a const unsigned int * to a 0-terminated array of
+Unicodes.
+
+‘apl_exec(const char * line_utf8)’
+‘apl_exec_ucs(const unsigned int * line_ucs)’
+     pass a line to the interpreter for immediate execution as APL code.
+     For example,
+
+     apl_exec("1 2 3 + 4 5 6")
+
+     should return the APL vector 5 7 9, which can then be accessed with
+     other libapl functions such as get_rank(), get_axis(), etc.
+
+‘apl_command(const char * line_utf8)’
+‘apl_command_ucs(const unsigned int * line_ucs)’
+     pass an APL command to the command processor and return its output.
+     For example,
+
+     apl_command(")CLEAR")
+
+     should clear the current workspace and return "CLEAR WS".
+
+‘APL_value’
+     APL_value is a convenience typedef for a pointer to an opaque
+     structure Value, supported by over 30 functions allowing one to
+     construct a new Value and to gain access to its rank, shape and
+     ravel.  In this document, the terms "Value" and "APL value" are not
+     interchangeable; they refer respectively to a structure and to a
+     pointer.
+
+‘APL_function’
+     APL_function is a convenience typedef for a pointer to an opaque
+     structure Function, which is a defined APL function or a built-in
+     function of the interpreter.  This pointer provides direct access
+     of the eval__XXX() functions that are impemented by the function.
+     In this document, the terms "Function" and "APL function" are not
+     interchangeable; they refer respectively to a structure and to a
+     pointer.  Every function implements a (typically small) subset of
+     eval__XXX() functions that differ by the arguments that the take.
+     The XXX stands for the signature of the function, e.g.  eval__fun_B
+     for a monadic function, eval__A_fun_B for a dyafic function, and so
+     on.  The possible arguments (in that order are: A (left value), L
+     (left function of a dyadic operator), R (right function of an
+     operator), X (axis argument of a function or operator), and B
+     (right value).
+
+‘eval__fun(APL_function fun)’
+‘eval__A_fun_B(APL_function fun, APL_value B)’
+‘eval__A_fun_B(APL_value A, APL_function fun, APL_value B)’
+‘eval__A_L_oper_B(APL_value A, APL_function L, APL_function fun, APL_value B)’
+‘eval__A_fun_X_B(APL_value A, APL_function fun, APL_value X, APL_value B)’
+‘eval__A_L_oper_R_B(APL_value A, APL_function L, APL_function fun, APL_function R, APL_value B)’
+‘eval__A_L_oper_R_X_B(APL_value A, APL_function L, APL_function fun, APL_function R, APL_value X, APL_value B)’
+‘eval__fun_B(APL_function fun, APL_value B)’
+‘eval__fun_B(APL_function fun, APL_value B)’
+‘eval__L_oper_B(APL_function L, APL_function fun, APL_value B)’
+‘eval__fun_X_B(APL_function fun, APL_value X, APL_value B)’
+‘eval__L_oper_R_B(APL_value A, APL_function L, APL_function fun, APL_function R, APL_value B)’
+‘eval__L_oper_R_X_B(APL_function L, APL_function fun, APL_function R, APL_value X, APL_value B)’
+     These are the possible eval functions.  The APL_value returned by
+     an eval__XXX() function shall be released with release_value() by
+     the caller.
+
+‘get_var_value(const char * var_name_utf8, const char * loc)’
+     return an APL value pointing to the contents of a variable in the
+     current workspace.
+
+‘set_var_value(const char * var_name_utf8, const APL_value new_value, const char * loc)’
+     set the contents of a variable in the workspace to that of the
+     given APL value.
+
+‘expand_LF_to_CRLF’
+     this function controls whether linefeed (LF) characters shall be
+     expanded to CR/LF on output.  The default is no expansion.  Please
+     note that LF expansion may be triggered in other places, therefore
+     expand_LF_to_CRLF(0) alone does not guarantee that no CR characters
+     are being printed.
+
+No other GNU APL header is exposed.
+
+This document will not tell you much about APL. For more details about
+the language, consult an APL reference manual such as those recommended
+in the file ‘README-7-more-info’, which are probably installed in
+‘/usr/share/doc/apl’ or ‘/usr/local/share/doc/apl’.
+* Menu:
+
+* Vague details of the GNU APL implementation::
+* Summary of functions::
+* Programming notes::
+
+
+File: libapl.info,  Node: Vague details of the GNU APL implementation,  Next: Summary of functions,  Prev: Top,  Up: Top
+
+1 Vague details of the GNU APL implementation
+*********************************************
+
+Although the implementation is hidden from the API, the programmer needs
+to know a little about it.
+
+Only one workspace, simply known as "the workspace", is active at any
+time.  The workspace may be cleared, named, saved and restored by calls
+to ‘apl_command’.
+
+The workspace contains a collection of symbols of various kinds.  Apart
+from ‘apl_exec’ and ‘apl_command’, which behave as if entered from the
+keyboard in an interactive APL session, this API gives access only to
+APL variables, i.e.  symbols associated with Values.
+
+A Value is a multidimensional array of cells.  It has three visible
+components: rank, shape and ravel.
+
+The shape is a vector of integers, giving the number of elements along
+each axis of the array.  The number of shape items is known as the rank.
+There is an upper bound to the rank, configurable when GNU APL is built,
+which is displayed as a message by ‘apl_exec("⎕SYL[7;]")’.
+
+The ravel is a vector of cells, accessed in APL by a multi-index but in
+the API by a single index starting at 0.  As one progresses along the
+ravel, the multi-index is ordered lexicographically, e.g.  in a clear
+workspace, the multi-index of an array of shape ‘2 3’ would successively
+be ‘1 1’, ‘1 2’, ‘1 3’, ‘2 1’, ‘2 2’, ‘2 3’.  The index origin in APL
+may be changed by ‘apl_exec("⎕IO←0")’, but in the API the ravel is
+always indexed from 0.
+
+The number of elements in the ravel is given by the product of the shape
+items.  An empty product is of course equal to 1, thus this calculation
+is also valid for a scalar, which has rank 0.
+
+A cell can hold any of several kinds of objects:
+
+  1. A scalar, i.e.  either a number or a single 32-bit Unicode
+     character.  The number may be stored internally as a 64-bit
+     integer, a ‘double’, or a ‘complex<double>’.
+  2. An APL value.  This allows nested arrays to be represented.
+  3. None of the above, i.e.  information not accessible from the API.
+
+The API does not give direct access to cell objects.  The user must know
+what is in a particular cell and retrieve it by supplying its position
+in the ravel, using a specialized access method for cells of that
+particular type.  To this end, the cell type can be queried.  This is an
+integer treated as a bit string.  The bits denoting cells accessible
+from the API have predefined names.
+
+CCT_CHAR    = 0x02
+CCT_POINTER = 0x04
+CCT_INT     = 0x10
+CCT_FLOAT   = 0x20
+CCT_COMPLEX = 0x40
+CCT_NUMERIC = CCT_INT | CCT_FLOAT | CCT_COMPLEX
+
+Attempting to retrieve the contents of a cell by the wrong access method
+is an error that will crash the program.
+* Menu:
+
+* Lifespan of Values::
+
+
+File: libapl.info,  Node: Lifespan of Values,  Up: Vague details of the GNU APL implementation
+
+1.1 Lifespan of Values
+======================
+
+  1. All Values are invisible to the API. Internally, they contain a
+     reference count, and are scheduled for destruction when the
+     reference count reaches zero.  The actual destruction might not
+     happen immediately.  The fact that one succeeded in accessing a
+     Value does not prove that it is still alive, it merely means that
+     it has not yet been destructed.
+
+  2. All API functions that return an APL value increment the reference
+     count.  It is your responsibility to decrement the reference count
+     using ‘release_value’ when the Value is no longer needed.  Failure
+     to do so will cause memory leaks.
+
+  3. The APL value provided in the argument list of ‘res_callback’ (see
+     *note Interface to APL interpreter: #interface-to-apl-interpreter.)
+     has a particularly brief lifespan.  The execution of that function
+     is your only chance of accessing it.  Its reference count is not
+     increased before the call, so you must not release it.
+
+  4. The type-specific ‘set_’ functions change one element only.  Other
+     references to the Value concerned will also reflect the change; for
+     example, if the APL value was returned by ‘get_var_value’, a
+     following call to ‘get_var_value’ with the same variable name will
+     show the change.
+
+  5. ‘set_value’ and ‘set_var_value’ make a new deep copy of a
+     non-scalar Value.  The reference count of the original Value is not
+     increased.  Cloning (which is deliberately discouraged in the API
+     by not providing a copy constructor) can be simulated with the aid
+     of either of these.  The details are left to the persevering user.
+
+
+File: libapl.info,  Node: Summary of functions,  Next: Programming notes,  Prev: Vague details of the GNU APL implementation,  Up: Top
+
+2 Summary of functions
+**********************
+
+This section is an aide-memoire, not a manual: consult the comments
+preceding each function for details.  See *note Programming notes:
+#programming-notes. for information on the ‘loc’ parameter.
+
+The other parameter values have the following types:
+
+‘val’                The main APL value
+‘pval’               A secondary APL value
+‘cval’               A 32-bit Unicode
+                     character
+‘ival’               A 64-bit integer
+‘xval’,‘yval’        A 64-bit double
+‘sval’               A UTF-8 encoded ‘char*’
+‘i’                  A 64-bit index
+‘k’,‘n1’,‘n2’,‘n2’   A 32-bit index
+
+* Menu:
+
+* Constructor functions::
+* Read access to Values::
+* Write access to cells::
+* Interface to APL interpreter::
+* Destructor function::
+* Print support::
+
+
+File: libapl.info,  Node: Constructor functions,  Next: Read access to Values,  Up: Summary of functions
+
+2.1 Constructor functions
+=========================
+
+Each of these functions returns an APL value and has a name descriptive
+of its argument list.
+
+‘int_scalar(ival,loc)’, ‘double_scalar(xval,loc)’,
+‘complex_scalar(xval,yval,loc)’ and ‘char_scalar(cval,loc)’ initialize
+to a given C value.
+
+‘char_vector(sval,loc)’ initializes from a UTF-8 encoded C string to an
+array of rank 1 containing Unicode characters.
+
+‘apl_scalar(loc)’, ‘apl_vector(n1)’, ‘apl_matrix(n1,n2)’ and
+‘apl_cube(n1,n2,n3)’ initialize to arrays of rank 0,1,2,3;
+‘apl_value(shape,loc)’ initializes to an array of arbitrary shape.  All
+cells in these arrays are initialized to 0.
+
+
+File: libapl.info,  Node: Read access to Values,  Next: Write access to cells,  Prev: Constructor functions,  Up: Summary of functions
+
+2.2 Read access to Values
+=========================
+
+‘get_rank(val)’, ‘get_axis(val,k)’ and ‘get_element_count(val)’ give
+information about the shape,
+
+‘get_type(val,i)’ returns the cell type of a ravel element.  The
+predefined names can be used in e.g.  a ‘switch’ statement on the cell
+type.
+
+‘is_char(val,i)’, ‘is_int(val,i)’, ‘is_double(val,i)’,
+‘is_complex(val,i)’ and ‘is_value(val,i)’ are conveniently named
+front-ends to ‘get_type’ that do not require the user to examine the
+cell type.
+
+‘is_string(val)’ tests whether the entire value is a simple character
+vector.  If so, ‘print_value_to_string’ can be used to convert it to a
+UTF-8 encoded C string.
+
+‘get_char(val,i)’, ‘get_int(val,i)’, ‘get_real(val,i)’,
+‘get_imag(val,i)’ and ‘get_value(val,i)’ retrieve the actual contents of
+a cell of which the type is already known, if necessary by having called
+‘get_type’ or one of its front-ends.  For example ‘get_real’ can be used
+if ‘get_type(val,i) & (CCT_FLOAT | CCT_COMPLEX)’ is nonzero.
+
+
+File: libapl.info,  Node: Write access to cells,  Next: Interface to APL interpreter,  Prev: Read access to Values,  Up: Summary of functions
+
+2.3 Write access to cells
+=========================
+
+Cells can be accessed only via an APL value pointing to their containing
+Value.
+
+‘set_char(cval,val,i)’, ‘set_int(ival,val,i)’, ‘set_real(xval,val,i)’,
+‘set_imag(yval,val,i)’ and ‘set_value(pval,val,i)’ replace the contents
+of cell ‘i’ of ‘val’.
+
+It is not possible to change the shape of an APL value.
+
+
+File: libapl.info,  Node: Interface to APL interpreter,  Next: Destructor function,  Prev: Write access to cells,  Up: Summary of functions
+
+2.4 Interface to APL interpreter
+================================
+
+‘set_var_value(name,val,loc)’ and ‘get_var_value(name,val,loc)’ save and
+retrieve values to the workspace under specified names.
+
+An external function pointer ‘res_callback’ is called just before
+‘apl_exec’ exits.  To exploit it, assign a suitable user-written
+function to it, e.g.
+
+/* callback to print every value */
+static int always_print(const APL_value apl,int committed) {
+  return 1;
+}
+
+/* callback to save a copy in the workspace under the name "_" */
+static int save_to_workspace(const APL_value apl,int committed) {
+  set_var_value("_",apl,LOC);
+  return !committed;
+}
+
+/* One-off declaration statement, must not be inside a function */
+result_callback res_callback = always_print_it;
+...
+/* A later assignment statement may be anywhere */
+res_callback = save_to_workspace;
+...
+res_callback = NULL;      /* disables callback feature */
+
+Here ‘apl’ is the anonymous value to which the APL expression evaluates.
+You are granted access to it just before its brief lifespan expires.
+‘committed’ is a C boolean (only 0 is false) reporting whether that
+value was stored to a variable.  Your return value is a C boolean
+telling whether the value should be printed by the APL interpreter.
+
+The value ‘*apl’ (which the API cannot see) will be scheduled for
+destruction as soon as you exit ‘res_callback’.  Don’t release it
+yourself.
+
+
+File: libapl.info,  Node: Destructor function,  Next: Print support,  Prev: Interface to APL interpreter,  Up: Summary of functions
+
+2.5 Destructor function
+=======================
+
+‘release_value(val,loc)’ decrements the reference count of ‘*val’ as
+explained in *note Lifespan of Values: #lifespan-of-values./
+
+
+File: libapl.info,  Node: Print support,  Prev: Destructor function,  Up: Summary of functions
+
+2.6 Print support
+=================
+
+‘print_value(value,file)’, ‘print_value_to_string(value)’ filter an APL
+value through the APL formatting routines.  Their behaviour depends on
+several system variables, such as ‘⎕FC’, ‘⎕PP’, ‘⎕PW’.
+
+‘UTF8_to_Unicode’, ‘Unicode_to_UTF8’ are provided because ‘get_char’ and
+‘set_char’ work with 32-bit Unicode, whereas many other user interfaces
+use UTF-8.
+
+
+File: libapl.info,  Node: Programming notes,  Prev: Summary of functions,  Up: Top
+
+3 Programming notes
+*******************
+
+The typical application would start with:
+
+#include <stdio.h>
+#include <stdint.h>
+#include <apl/libapl.h>
+
+This interface can be called from C, but since GNU APL is a C++ package.
+the C++ library must be explicitly loaded, e.g.  in Linux:
+
+cc myprog.c -lapl -lstdc++ -o myprog
+
+* Menu:
+
+* The loc parameter and LOC macro::
+
+
+File: libapl.info,  Node: The loc parameter and LOC macro,  Up: Programming notes
+
+3.1 The ‘loc’ parameter and ‘LOC’ macro
+=======================================
+
+All the functions that return APL values, as well as ‘release_value’ and
+‘set_var_value’, contain a parameter ‘const char* loc’.  This parameter
+is used to keep track of changes to a Value and may be displayed by
+certain debugging services.  You can put in anything you like, but most
+convenient is ‘LOC’, a macro that expands to the file name and line
+number.
+
+
+
+Tag Table:
+Node: Top215
+Node: Vague details of the GNU APL implementation5196
+Ref: #vague-details-of-the-gnu-apl-implementation5413
+Node: Lifespan of Values8069
+Ref: #lifespan-of-values8214
+Node: Summary of functions9885
+Ref: #summary-of-functions10070
+Node: Constructor functions10884
+Ref: #constructor-functions11045
+Node: Read access to Values11680
+Ref: #read-access-to-values11871
+Node: Write access to cells12901
+Ref: #write-access-to-cells13099
+Node: Interface to APL interpreter13431
+Ref: #interface-to-apl-interpreter13641
+Node: Destructor function15011
+Ref: #destructor-function15195
+Node: Print support15334
+Ref: #print-support15469
+Node: Programming notes15867
+Ref: #programming-notes15994
+Node: The loc parameter and LOC macro16318
+Ref: #the-loc-parameter-and-loc-macro16492
+
+End Tag Table
+
+
+Local Variables:
+coding: utf-8
+End:

@@ -22,16 +22,48 @@
 (defn find-apl-function [fn-name]
   (jna/find-function fn-name (apl-library-path)))
 
+
+;; todo -- not sure if either of these is correct
+
+
+(defn apl_value
+  ^Pointer [item]
+  (jna/ensure-ptr item))
+
+;; todo -- see previous
+(def APL_value (find-apl-function "apl_value"))
+
 (jna/def-jna-fn (apl-library-path)
   init_libapl
   "Initialize GNU APL!"
-  ;; (maybe?)
-  nil)
+  nil
+  [progname str]
+  [logname int])
+
+(jna/def-jna-fn (apl-library-path)
+  apl_exec
+  "Run an APL command!"
+  Integer
+  [line str])
 
 (defn initialize!
-  "Crash and burn!" ;; todo -- make this work
   []
-  (init_libapl))
+  ;; todo -- what are the purpose of these arguments?
+  (init_libapl "apl" 1))
+
+(defn run-simple-string! [cmd]
+  (apl_exec cmd))
+
+(jna/def-jna-fn (apl-library-path)
+  get_var_value
+  "Get APL variable value"
+  ;; todo -- what should this value be?
+  apl_value
+  [var_name str]
+  [loc str])
 
 (comment
-  (initialize!))
+  (initialize!)
+  (run-simple-string! "res ← 4 4 ⍴ 3") ;; works!
+  (get_var_value "res" 0) ;; doesn't work!
+  )
