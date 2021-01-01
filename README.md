@@ -55,7 +55,7 @@ res
 
 ## Roadmap
 
-[ ] Push to Clojars
-[ ] Marshall pointers to native Clojure datatypes
-[ ] Zero-copy pathway between APL and Clojure for monster performance
-[ ] Ergonomic Clojure API
+* [ ] Push to Clojars 
+* [ ] Marshall pointers to native Clojure datatypes 
+* [ ] Zero-copy pathway between APL and Clojure for monster performance 
+* [ ] Ergonomic Clojure API
