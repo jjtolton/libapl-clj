@@ -1,18 +1,15 @@
 (ns libapl-clj.impl.jna
   (:require [tech.v3.jna :as jna]
-            [tech.v3.jna.base :as jna-base]
-            [tech.v3.datatype.casting :as casting]
-            [tech.v3.datatype.pprint :as dtype-pp]
-            [camel-snake-kebab.core :as csk]
-            [clojure.string :as s]
-            [clojure.java.io :as io]
-            [clojure.set :as set]
-            [clojure.tools.logging :as log]
             [environ.core :as environ])
-  (:import [com.sun.jna Pointer NativeLibrary]))
+  (:import [com.sun.jna Pointer]))
 
-(defonce apl-library-path* (atom (or (environ/env "LD_LIBRARY_PATH")
-                                     "/usr/local/lib/apl")))
+(def ^:private default-linux-library-path "/usr/local/lib/apl")
+
+(defonce apl-library-path* (atom (or (environ/env "APL_LIBRARY_PATH")
+                                     default-linux-library-path)))
+
+(defn APL_value ^Pointer [value]
+  (jna/ensure-ptr value))
 
 (defonce _ (jna/add-library-path "libapl.so" :resource  @apl-library-path*))
 
@@ -22,16 +19,12 @@
 (defn find-apl-function [fn-name]
   (jna/find-function fn-name (apl-library-path)))
 
+(defn find-apl-symbol ^Pointer [sym-name]
+  (jna/find-function sym-name (apl-library-path)))
 
-;; todo -- not sure if either of these is correct
-
-
-(defn apl_value
-  ^Pointer [item]
-  (jna/ensure-ptr item))
-
-;; todo -- see previous
-(def APL_value (find-apl-function "apl_value"))
+(defn find-deref-apl-symbol ^Pointer [sym-name]
+  (-> (find-apl-symbol sym-name)
+      (.getPointer 0)))
 
 (jna/def-jna-fn (apl-library-path)
   init_libapl
@@ -42,28 +35,31 @@
 
 (jna/def-jna-fn (apl-library-path)
   apl_exec
-  "Run an APL command!"
+  "Run an APL string!"
   Integer
   [line str])
-
-(defn initialize!
-  []
-  ;; todo -- what are the purpose of these arguments?
-  (init_libapl "apl" 1))
-
-(defn run-simple-string! [cmd]
-  (apl_exec cmd))
 
 (jna/def-jna-fn (apl-library-path)
   get_var_value
   "Get APL variable value"
-  ;; todo -- what should this value be?
-  apl_value
+  Pointer
   [var_name str]
   [loc str])
 
-(comment
-  (initialize!)
-  (run-simple-string! "res ← 4 4 ⍴ 3") ;; works!
-  (get_var_value "res" 0) ;; doesn't work!
-  )
+(jna/def-jna-fn (apl-library-path)
+  print_value_to_string
+  "Convert opaque APL value to string"
+  String
+  [value APL_value])
+
+(jna/def-jna-fn (apl-library-path)
+  get_rank
+  "Get Rank of APL tensor"
+  Integer
+  [value APL_value])
+
+(jna/def-jna-fn (apl-library-path)
+  get_element_count
+  "Get number of elements of APL value"
+  Integer
+  [value APL_value])
