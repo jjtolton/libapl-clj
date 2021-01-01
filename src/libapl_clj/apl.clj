@@ -4,7 +4,8 @@
 (defn initialize!
   "Initialize the APL shared library.  Currently only tested on Linux."
   []
-  (jna/init_libapl "apl" 1))
+  (jna/init_libapl "apl" 1)
+  :ok)
 
 (defn run-simple-string!
   "Run an APL command. Returns `true` if successful."
@@ -36,14 +37,14 @@ pass this value."
 (comment
   (initialize!)
   (run-simple-string! "res ← 4 4 ⍴ 3")
-  (def res (apl-value-pointer "res"))
+  (def res (value-pointer "res"))
   res
   (pointer->string res)
   (pointer->rank res)
   (pointer->count res)
 
   (run-simple-string! "res1 ← res + res")
-  (def res1 (apl-value-pointer "res1"))
+  (def res1 (value-pointer "res1"))
   res
   (pointer->string res1)
   (pointer->rank res1)

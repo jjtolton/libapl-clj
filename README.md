@@ -38,6 +38,8 @@ environment variable to the correct path before running `initialize!`.
 
 ```clojure
 (require '[libapl-clj.apl :as apl])
+(apl/initialize!)
+;;=> :ok
 (apl/run-simple-string! "res ← 4 4 ⍴ 3")
 ;;=> true
 (def res (apl/value-pointer "res"))
