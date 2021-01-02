@@ -1,3 +1,5 @@
+[![Clojars Project](https://img.shields.io/clojars/v/jjtolton/libapl-clj.svg)](https://clojars.org/jjtolton/libapl-clj)
+
 # libapl-clj
 
 Following in the footsteps of [libpython-clj](https://github.com/clj-python/libpython-clj)
