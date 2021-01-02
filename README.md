@@ -3,7 +3,7 @@
 # libapl-clj
 
 Following in the footsteps of [libpython-clj](https://github.com/clj-python/libpython-clj)
-and [libjulia-clj](https://github.com/cnuernber/libjulia-clj), libapl-clj is provides native
+and [libjulia-clj](https://github.com/cnuernber/libjulia-clj), libapl-clj provides native
 interop from Clojure into [GNU APL](https://www.gnu.org/software/apl/).
 
 ## Status
@@ -57,7 +57,7 @@ res
 
 ## Roadmap
 
-* [ ] Push to Clojars 
+* [x] Push to Clojars 
 * [ ] Marshall pointers to native Clojure datatypes 
 * [ ] Zero-copy pathway between APL and Clojure for monster performance 
 * [ ] Ergonomic Clojure API
