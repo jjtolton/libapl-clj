@@ -107,6 +107,14 @@ x+y -- brutalist naming convention.  avp+idx->char indicates a function
 (defn n-elems ^Integer [^Pointer avp]
   (jna/get_element_count avp))
 
+(comment
+  (n-elems (char-vector "hello"))
+  (n-elems (int-scalar 1))
+  (n-elems (double-scalar 10.12))
+  (n-elems (complex-scalar 1 2))
+  
+  )
+
 (defn type-at-idx
   "Get type of value for pointer at idx.
    CT_NONE    = 0,
@@ -204,7 +212,7 @@ any reasion to not do the casting to a container here."
 
 ;; auxiliary
 
-(defn onwer-count [^Pointer avp]
+(defn owner-count [^Pointer avp]
   (jna/get_owner_count avp))
 
 (defn get-function-ucs

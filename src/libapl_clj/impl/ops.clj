@@ -30,10 +30,10 @@
   ;; todo -- reflection, gross.  This could benefit from
   ;; a protocol and type extension
   (cond
-    (int? x)                    (jna/int_scalar x)
-    (or (float? x) (double? x)) (jna/double_scalar (double x))
-    (char? x)                   (jna/char_scalar x)
-    (string? x)                 (jna/char_vector x)
+    (int? x)                    (jna/int_scalar x "")
+    (or (float? x) (double? x)) (jna/double_scalar (double x) "")
+    (char? x)                   (jna/char_scalar x "")
+    (string? x)                 (jna/char_vector x "")
     :else                       (throw (ex-info "Invalid type"
                                                 {:type (type x)}))))
 
@@ -55,31 +55,31 @@
 (declare ->tensor) ;; ->tensor is mutually recursive with jvm<
 
 (defn jvm< [apl-value idx]
-  (case (api/type-at-idx apl-value idx)
-    0    nil
+    (case (api/type-at-idx apl-value idx)
+      0    nil
 
-    ;; char
-    0x02 (api/char< apl-value idx)
+      ;; char
+      0x02 (api/char< apl-value idx)
 
-    ;; pointer, probably a vector or char-vector
-    0x04 (->> idx
-              (api/avp< apl-value)
-              ->tensor)
+      ;; pointer, probably a vector or char-vector
+      0x04 (->> idx
+                (api/avp< apl-value)
+                ->tensor)
     
-    ;; todo CELLREF -- never encountered this, not sure what it is
-    0x08 (->> idx
-              (api/avp< apl-value)
-              ->tensor)
+      ;; todo CELLREF -- never encountered this, not sure what it is
+      0x08 (->> idx
+                (api/avp< apl-value)
+                ->tensor)
 
-    ;; int
-    0x10 (api/int< apl-value idx)
+      ;; int
+      0x10 (api/int< apl-value idx)
 
-    ;; float, double, or real part of complex number
-    0x20 (api/real< apl-value idx)
+      ;; float, double, or real part of complex number
+      0x20 (api/real< apl-value idx)
 
-    ;; complex number
-    0x40 (complex (api/real< apl-value idx)
-                  (api/imag< apl-value idx))))
+      ;; complex number
+      0x40 (complex (api/real< apl-value idx)
+                    (api/imag< apl-value idx))))
 
 (defn ->tensor [apl-value]
   (let [rank        (api/rank apl-value)
