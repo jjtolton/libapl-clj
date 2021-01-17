@@ -10,10 +10,12 @@ interop from Clojure into [GNU APL](https://www.gnu.org/software/apl/).
 
 ## Status
 
-MVP: APL shared library is able to be loaded on Linux. Arbitrary APL strings can be run,
-and the values can be extracted into strings. No marshalling to Clojure datastructures
-currently supported, but that's next on the roadmap. API and implementation subject to
-change.
+Pre-alpha: APL shared library is able to be loaded on Linux. 
+* Arbitrary APL strings can be run, and the values can be extracted into strings.
+* APL<->Clojure data copy is accomplished easily
+* Zero-copy paradigm supported
+* There are system instabilities, your REPL may crash from time to time.
+* automatic GC not yet implemented
 
 ## Overview
 
@@ -42,24 +44,72 @@ environment variable to the correct path before running `initialize!`.
 
 ```clojure
 (require '[libapl-clj.apl :as apl])
-(apl/initialize!)
-;;=> :ok
-(apl/run-simple-string! "res ← 4 4 ⍴ 3")
-;;=> true
-(def res (apl/value-pointer "res"))
-res
-;;=> #object[com.sun.jna.Pointer 0x5ca7c618 "native@0x7ff08049f730"]
-(pointer->string res)
-;;=> "3 3 3 3\n3 3 3 3\n3 3 3 3\n3 3 3 3\n"
-(pointer->rank res)
-;;=> 2
-(pointer->count res)
-;;=> 16
+
+apl/+
+;;=> #function[libapl-clj.prototype/jvm-fn/fn--23227]
+(apl/+ 1 2)
+;;=> 3
+(apl/+ [1 2 3] [4 5 6])
+;;=>
+#tech.v3.tensor<object>[3]
+[5 7 9]
+
+(display! (apl/+ [1 2 3] [4 5 6]))
+
+┏→━━━━┓
+┃5 7 9┃
+┗━━━━━┛
+
+(apl/× [1 2 3] [4 5 6])
+;;=> #tech.v3.tensor<object>[3]
+[4 10 18]
+
+(apl/⍴ [2 3 5] (first "a"))
+;;=>
+#tech.v3.tensor<object>[2 3 5]
+[[[a a a a a]
+  [a a a a a]
+  [a a a a a]]
+ [[a a a a a]
+  [a a a a a]
+  [a a a a a]]]
+
+(display! (apl/⍴ [2 3 5] (first "a")))
+;;=>
+┏→━━━━┓
+↓aaaaa┃
+┃aaaaa┃
+┃aaaaa┃
+┃     ┃
+┃aaaaa┃
+┃aaaaa┃
+┃aaaaa┃
+┗━━━━━┛
+
+(apl/reduce apl/⌈ [[1 2 3] [3 5 6] [1 2 3]])
+#tech.v3.tensor<object>[3]
+[3 6 3]
+
+(apl/reduce apl/⌈ 1 [[1 2 3] [3 5 6] [1 2 3]])
+#tech.v3.tensor<object>[3]
+[3 6 3]
+
 ```
 
 ## Roadmap
 
+### Alpha-release
 * [x] Push to Clojars 
-* [ ] Marshall pointers to native Clojure datatypes 
-* [ ] Zero-copy pathway between APL and Clojure for monster performance 
-* [ ] Ergonomic Clojure API
+* [x] Marshall pointers to native Clojure datatypes 
+* [x] Zero-copy pathway between APL and Clojure for monster performance 
+* [x] Ergonomic Clojure API
+* [ ] Documentation
+* [ ] Tests
+
+### Beta-release
+* [ ] User-defined APL functions
+* [ ] APL function combinators
+
+### 1.0 Release
+* [ ] Garbage Collection
+* [ ] Remove reflection

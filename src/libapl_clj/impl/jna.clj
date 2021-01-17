@@ -169,7 +169,7 @@ an APL statement."
   set_value
   "Set value of value at index"
   Pointer
-  [new_value APL_value]
+  [new_value long]
   [val APL_value]
   [idx unchecked-int])
 

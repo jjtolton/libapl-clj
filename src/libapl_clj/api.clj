@@ -1,13 +1,13 @@
 (ns ^{:doc "A (more) stable API for working in APL memory space.  Coercion
 from JVM->APL provided. This is the suggested API for library development."}
-    libapl-clj.api
-  (:require [libapl-clj.impl.api :as api]
-            [libapl-clj.impl.ops :as ops]
-            [libapl-clj.impl.helpers :as h]
-            [libapl-clj.apl :as apl]
-            [libapl-clj.types :as apl-types]
+ libapl-clj.api
+  (:require [libapl-clj.impl.api :as api :reload true]
+            [libapl-clj.impl.ops :as ops :reload true]
+            [libapl-clj.impl.helpers :as h :reload true]
+            [libapl-clj.types :as apl-types :reload true]
             [tech.v3.tensor :as tensor]
-            [tech.v3.datatype :as dtype])
+            [tech.v3.datatype :as dtype]
+            [libapl-clj.impl.jna :as jna])
   (:import [com.sun.jna Pointer]))
 
 (def initialize! ops/initialize!)
@@ -37,14 +37,13 @@ from JVM->APL provided. This is the suggested API for library development."}
     ;; todo -- this will crash on complex numbers.
     ;;       : can't figure out why atp->ref! crashes on scalars
     (let [assign-string (format "%s ← %s" var-name (str ops/jvm< apl-pointer))]
-      (apl/run-simple-string! assign-string))
+      (run-simple-string! assign-string))
     (api/atp->ref! var-name apl-pointer)))
 
 (defn jvm-type [^Pointer avp]
   ;; todo -- would be good to get rid of this reflection
   (if (h/scalar-pointer? avp)
-    (-> avp
-        ops/jvm<
+    (-> (ops/jvm< avp 0)
         clojure.core/type
         apl-types/type->key-type)
     ::apl-types/tensor))
@@ -66,10 +65,9 @@ from JVM->APL provided. This is the suggested API for library development."}
          not-found)))))
 
 #_(defn vget-in [^Pointer apl-value path]
-  (when-not (h/scalar-pointer? apl-value)
-    (when-let [[coordinate & path] (not-empty path)]
-      (let [e-count (n-elems apl-value)])
-      )))
+    (when-not (h/scalar-pointer? apl-value)
+      (when-let [[coordinate & path] (not-empty path)]
+        (let [e-count (n-elems apl-value)]))))
 
 (def set-char! api/set-char!)
 
@@ -105,16 +103,32 @@ from JVM->APL provided. This is the suggested API for library development."}
 (defn apl-complex [real imag]
   (api/complex-scalar real imag))
 
-
 (defn ->apl [x]
   ;; need to fix reflection
-  (cond
-    (h/scalar? x) (ops/->scalar-pointer x)
-    (string? x)   (api/char-vector x)
-    (seqable? x)  (-> x tensor/->tensor ops/tensor->apl)
-    :else         (throw (ex-info "Unsupported type"
-                                  {:value x
-                                   :type  (type x)}))))
+  (if-not (h/pointer? x)
+    (cond
+      (h/scalar? x) (ops/->scalar-pointer x)
+      (string? x)   (api/char-vector x)
+      (seqable? x)  (-> x tensor/->tensor ops/tensor->apl)
+      :else         (throw (ex-info "Unsupported type"
+                                    {:value x
+                                     :type  (type x)})))
+    x))
+
+(defn ->jvm [avp]
+  (if (h/pointer? avp)
+    (case (jvm-type avp)
+      ::apl-types/integer (api/int< avp 0)
+      ::apl-types/double  (api/real< avp 0)
+      ::apl-types/char    (api/char< avp 0)
+      ::apl-types/complex (complex.core/complex
+                           (api/real< avp 0)
+                           (api/imag< avp 0))
+      ::apl-types/tensor  (ops/->tensor avp))
+    avp))
+
+(comment
+  (->jvm (api/int-scalar 1)))
 
 (defn value->apl [v]
   {:pre [#(or (h/scalar? v)
@@ -158,15 +172,23 @@ from JVM->APL provided. This is the suggested API for library development."}
 (defn fp+op+arg ^Pointer [^Pointer fp ^Pointer op arg]
   (api/fp+op+arg fp op (value->apl arg)))
 
-(defn fp+op+axis+arg ^Pointer [^Pointer fp ^Pointer op ^Pointer axis arg]
-  (api/fp+op+axis+arg fp op (value->apl axis) (value->apl arg)))
+(defn arg+fp+op+fp+arg ^Pointer [arg1 ^Pointer fp1 ^Pointer op ^Pointer fp2 ^Pointer arg2]
+  (api/arg+fp+op+fp+arg (value->apl arg1) fp1 op fp2 (value->apl arg2)))
 
 (defn fp+op+axis+arg ^Pointer [^Pointer fp ^Pointer op ^Pointer axis arg]
   (api/fp+op+axis+arg fp op (value->apl axis) (value->apl arg)))
+
+(defn fp+axis+arg ^Pointer [^Pointer fp ^Pointer axis arg]
+  (api/fp+axis+arg fp (value->apl axis) (value->apl arg)))
+
+(defn fp+op+axis+arg ^Pointer [^Pointer fp ^Pointer op ^Pointer axis arg]
+  (api/fp+op+axis+arg fp op (value->apl axis) (value->apl arg)))
+
+(defn fp+op+fp+arg ^Pointer [^Pointer fp1 ^Pointer op ^Pointer fp2 arg]
+  (api/fp+op+fp+arg fp1 op fp2 (value->apl arg)))
 
 (defn fp+op+fp+axis+arg ^Pointer [^Pointer fp1 ^Pointer op ^Pointer fp2 ^Pointer axis arg]
   (api/fp+op+fp+axis+arg fp1 op fp2 (value->apl axis) (value->apl arg)))
-
 
 (comment
   (require '[libapl-clj.impl.pointer :as p])

@@ -215,19 +215,31 @@ any reasion to not do the casting to a container here."
 (defn owner-count [^Pointer avp]
   (jna/get_owner_count avp))
 
+
+(defn ->string-container
+  ([] (dtype/make-container :native-heap :uint64 []))
+  ([s]
+   (if (nil? s)
+     (->string-container)
+     (->> s
+          str
+          vec
+          first
+          vector
+          (dtype/make-container :native-heap :uint64)))))
+
 (defn get-function-ucs
   "Note: this function is an exception to the 'no-coercion' rule for this
 namespace because this is an esoteric technique and I can't think of a valid
 reason not to do it here."
-  [^String fstring]
-  (jna/get_function_ucs (->> fstring
-                             str
-                             vec
-                             first
-                             vector
-                             (dtype/make-container :native-heap :uint64))
-                        (dtype/make-container :native-heap :uint64 [])
-                        (dtype/make-container :native-heap :uint64 [])))
+  ([^String fstring]
+   (get-function-ucs fstring nil nil))
+  ([^String s1 ^String s2]
+   (get-function-ucs s1 s2 nil))
+  ([s1 s2 s3]
+   (jna/get_function_ucs (->string-container s1)
+                         (->string-container s2)
+                         (->string-container s3))))
 
 (comment
 
@@ -248,6 +260,9 @@ reason not to do it here."
 (defn arg+fn+op+axis+arg ^Pointer [arg1 ^Pointer fp ^Pointer op ^Pointer axis arg2]
   (jna/eval__A_L_oper_X_B arg1 fp op axis arg2))
 
+(defn arg+fp+op+fp+arg ^Pointer [arg1 ^Pointer fp1 ^Pointer op ^Pointer fp2 ^Pointer arg2]
+  (jna/eval__A_L_oper_R_B arg1 fp1 op fp2 arg2))
+
 (defn arg+fn+op+fn+axis+arg ^Pointer
   [arg1
    ^Pointer fp1
@@ -264,7 +279,10 @@ reason not to do it here."
   (jna/eval__L_oper_B fp op arg))
 
 (defn fp+op+axis+arg ^Pointer [^Pointer fp ^Pointer op ^Pointer axis arg]
-  (jna/eval__L_oper_X_B fp fp axis arg))
+  (jna/eval__L_oper_X_B fp op axis arg))
+
+(defn fp+axis+arg ^Pointer [^Pointer fp ^Pointer axis arg]
+  (jna/eval__fun_X_B fp axis arg))
 
 (defn fp+op+fp+arg ^Pointer [^Pointer fp1 ^Pointer op ^Pointer fp2 arg]
   (jna/eval__L_oper_R_B fp1 op fp2 arg))

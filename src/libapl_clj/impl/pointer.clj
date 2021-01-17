@@ -72,4 +72,9 @@
 (def ∘. (getfn '∘.)) ;; ⍝ not sure if this will work
 (def ⍤ (getfn '⍤))
 (def . (getfn '.))
-
+(def ⍳ (getfn '⍳))
+(def ⍷ (getfn '⍷))
+(def ⊣ (getfn '⊣))
+(def ⊢ (getfn '⊢))
+(def ⊂ (getfn '⊂))
+(def ⊃ (getfn '⊃))

@@ -1,13 +1,15 @@
 (ns libapl-clj.impl.helpers
-  (:require [libapl-clj.impl.api :as api]
-            )
+  (:require [libapl-clj.impl.api :as api])
   (:import [java.util UUID]
-           [libapl_clj.impl.protocols PTensor]
-           ))
+           [libapl_clj.impl.protocols PTensor]))
 
 (defn random-var-name []
   (clojure.string/replace (str "a" (UUID/randomUUID))  #"-" ""))
 
+
+(defn pointer? [x]
+  (= (str (type x))
+     "class com.sun.jna.Pointer"))
 
 (defn scalar? [x]
   ;; todo -- need to get thid of this reflection
