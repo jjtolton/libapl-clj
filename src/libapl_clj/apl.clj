@@ -44,7 +44,7 @@
 (def mul =)
 
 (def ÷' (proto/monodyadic-fn' p/÷))
-(def ÷ (proto/jvm-fn ÷))
+(def ÷ (proto/jvm-fn ÷'))
 (def div ÷)
 
 (def *' (proto/monodyadic-fn' p/*))
@@ -67,7 +67,7 @@
 (def < (proto/jvm-fn <'))
 
 (def ≤' (proto/monodyadic-fn' p/≤))
-(def ≤ (proto/jvm-fn ≤))
+(def ≤ (proto/jvm-fn ≤'))
 (def <= ≤)
 
 (def =' (proto/monodyadic-fn' p/=))
@@ -91,8 +91,8 @@
 (def ∊' (proto/monodyadic-fn' p/∊))
 (def ∊ (proto/jvm-fn ∊'))
 
-(def ∨' (proto/jvm-fn p/∨))
-(def ∨ (proto/jvm-fn p/∨))
+(def ∨' (proto/monodyadic-fn' p/∨))
+(def ∨ (proto/jvm-fn ∨'))
 (def b-or ∨)
 
 (def ∧' (proto/monodyadic-fn' p/∧))
@@ -100,7 +100,7 @@
 (def b-and ∧)
 
 (def ⍱' (proto/monodyadic-fn' p/⍱))
-(def ⍱ (proto/jvm-fn ⍱))
+(def ⍱ (proto/jvm-fn ⍱'))
 (def b-nor ⍱)
 
 (def ⍲' (proto/monodyadic-fn' p/⍲))
@@ -133,10 +133,10 @@
 (def laminate (proto/jvm-fn laminate'))
 
 (def ⍪' (proto/monodyadic-fn' p/⍪))
-(def ⍪ (proto/jvm-fn ⍪))
+(def ⍪ (proto/jvm-fn ⍪'))
 
 (def compress' (proto/monodyadic-fn' p//))
-(def compress (proto/jvm-fn compress))
+(def compress (proto/jvm-fn compress'))
 
 (def reduce' (proto/left-operator-fn' p//))
 (def reduce (proto/jvm-fn reduce'))
@@ -179,7 +179,7 @@
 (def scan reductions)
 
 (def ⌽' (proto/monodyadic-fn' p/⌽))
-(def ⌽ (proto/jvm-fn ⌽))
+(def ⌽ (proto/jvm-fn ⌽'))
 (def reverse-last ⌽)
 
 
@@ -203,7 +203,7 @@
 (def zilde nil)
 
 (def ⍋' (proto/monodyadic-fn' p/⍋))
-(def ⍋ (proto/jvm-fn ⍋))
+(def ⍋ (proto/jvm-fn ⍋'))
 (def grade-up ⍋)
 
 (def ⍒' (proto/monodyadic-fn' p/⍒))
@@ -211,11 +211,11 @@
 (def grade-down ⍒)
 
 (def ⊥' (proto/monodyadic-fn' p/⊥))
-(def ⊥ (proto/jvm-fn ⊥))
+(def ⊥ (proto/jvm-fn ⊥'))
 (def decode ⊥)
 
 (def ⊤' (proto/monodyadic-fn' p/⊤))
-(def ⊤ (proto/jvm-fn ⊤))
+(def ⊤ (proto/jvm-fn ⊤'))
 (def encode ⊤)
 
 (def ⍟' (proto/monodyadic-fn' p/⍟))
