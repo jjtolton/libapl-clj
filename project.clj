@@ -1,4 +1,4 @@
-(defproject jjtolton/libapl-clj "0.0.1-ALPHA-SNAPSHOT"
+(defproject jjtolton/libapl-clj "0.1.1-ALPHA-SNAPSHOT"
   :description "Clojure bindings for GNU APL"
   :url "http://github.com/jjtolton/libapl-clj"
   :plugins [[lein-tools-deps "0.4.5"]]
