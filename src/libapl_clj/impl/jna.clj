@@ -7,7 +7,7 @@
 
 (def ^:private default-linux-library-path "/usr/local/lib/apl")
 
-(defonce apl-library-path* (atom (or (environ/env "APL_LIBRARY_PATH")
+(defonce apl-library-path* (atom (or (System/getenv "APL_LIBRARY_PATH")
                                      default-linux-library-path)))
 
 (defn APL_value ^Pointer [value]
