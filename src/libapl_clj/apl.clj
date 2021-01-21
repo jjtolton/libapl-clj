@@ -4,16 +4,15 @@
                             range identical? find])
   (:require [libapl-clj.api :as api :reload true]
             [libapl-clj.impl.pointer :as p :reload true]
-            [libapl-clj.prototype :as proto]
+            [libapl-clj.prototype :as proto :reload true]
             [tech.v3.tensor :as tensor]
-            [libapl-clj.impl.helpers :as h]
-            [libapl-clj.impl.ops :as ops]))
+            [libapl-clj.impl.helpers :as h :reload true]
+            [libapl-clj.impl.ops :as ops :reload true]))
 
 (defn initialize!
   "Initialize the APL shared library.  Currently only tested on Linux."
   []
-  (api/initialize!)
-  :ok)
+  (ops/initialize!))
 
 (defn run-simple-string!
   "Run an APL command. Returns `true` if successful."
@@ -136,7 +135,8 @@
 (def ⍪ (proto/jvm-fn ⍪'))
 
 (def compress' (proto/monodyadic-fn' p//))
-(def compress (proto/jvm-fn compress'))
+(def / (proto/jvm-fn compress'))
+(def compress /)
 
 (def reduce' (proto/left-operator-fn' p//))
 (def reduce (proto/jvm-fn reduce'))
@@ -268,25 +268,52 @@
 
 
 (comment
+  
+  (->apl [1 2])
+  (display! (->apl [1 2]))
+
+  (->apl [1 2])
+  (->jvm (->apl [1 2]))
+  (display! (->apl (->jvm (->apl [1 2]))))
 
   (+ (->apl (->apl [1 2])) [1 2])
 
+  ;; (((2 - 1 2) - 3 4) - 5)
   (- (libapl-clj.impl.api/int-scalar 2)
      (tensor/->tensor [1 2])
      (->apl [3 4])
      5)
 
+  (display!
+   (->apl [1 2
+           "nested"
+           ["data"
+            [2 3 4
+             ["structure"
+              5 6 7]]]
+           ["is" ["here"]]]))
+
+  (display!
+   (->jvm (->apl [1 2
+                  "nested"
+                  ["data"
+                   [2 3 4
+                    ["structure"
+                     5 6 7]]]
+                  ["is" ["here"]]])))
+
   (display! ((comp -' +')
              [1 2] [3 4] [5 6])) 
   
-  (display! (+ [[1 2]
-                [3 4]]
+  (display!
+   (->apl (+ [[1 2]
+              [3 4]]
 
-               [[3 4]
-                [5 6]]
+             [[3 4]
+              [5 6]]
 
-               [[5 6]
-                [7 8]]))
+             [[5 6]
+              [7 8]])))
 
   (display! (- [[1 2]
                 [3 4]]
@@ -300,7 +327,23 @@
 
   (display! (= " " "hello there"))
 
-  (display! (∊ "abcde" "why is this a word"))
+  ;; the APL idiom for (-> x count range)
+  (-> "why is this a word" ⍴ ⍳)
+
+  ;; positions of left present in right
+  (display! (∊ "why is this a word" "aeiou"))
+
+  (display! (->apl (⍳ [3 3])))
+
+  (def t (⍳ [3 3]))
+  (->jvm (->apl t))
+  (display! (->apl (->jvm (⍳ [3 3]))))
+  
+
+  ;; indicies of vowels in phrase
+  (display! (let [phrase "why is this a word"]
+              (/ (∊ phrase "aeiou")
+                 (-> phrase ⍴ ⍳))))
 
   (display!
    (⍴ [2 3 5]
@@ -333,50 +376,12 @@
 
 
   (initialize!)
-  (run-simple-string! "res ← 4 4 ⍴ 3")
-  (def res (value-pointer "res"))
+  
+  
+  
 
-  (long res)
-  (vec (.getMethods (.getClass res)))
-  (.getLong res)
-  (long res)
-  (java.beans.BeanInfo. res)
-  (res )
-  res
-  (pointer->string res)
-  (pointer->rank res)
-  (pointer->count res)
-  (jna/get_value res 0)
+  
 
-  (jna/get_type res 1)
+  
 
-  (tensor/nd-buffer-descriptor->tensor)
-
-  (tech.v3.datatype/as-nd-buffer-descriptor
-   res
    )
-  
-
-
-  
-  (run-simple-string! "x ← 1.0 1.1 'a' 'hello' 'hey' 'b'")
-  (def x (value-pointer "x"))
-  x
-  (pointer->string x)
-  (= (jna/get_type x 0) 0x10 16) ;; integer
-  (= (jna/get_type x 1) 0x20 32) ;; float
-  (= (jna/get_type x 2) 0x02  2) ;; character
-  (= (jna/get_type x 3) 0x04  4) ;; char point / string
-  
-  (run-simple-string! "x1 ← ⍳3")
-  (def x1 (value-pointer "x1"))
-  (jna/get_type x1 0)
-  (jna/get_real x1 0)
-
-  
-  (run-simple-string! "res1 ← res + res")
-  (def res1 (value-pointer "res1"))
-  res
-  (pointer->string res1)
-  (pointer->rank res1)
-  (pointer->count res1))

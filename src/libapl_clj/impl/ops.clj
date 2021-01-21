@@ -16,11 +16,13 @@
   [cmd]
   (zero? (api/run-simple-string! cmd)))
 
-
-(defn initialize! []
-  (api/initialize!)
-  (api/run-simple-string! "⎕io ← 0")
-  :ok)
+(let [initialized? (atom false)]
+  (defn initialize! []
+    (when-not @initialized?
+      (api/initialize!)
+      (api/run-simple-string! "⎕io ← 0")
+      (reset! initialized? :ok))
+    @initialized?))
 
 
 (defonce _ (initialize!))
@@ -114,13 +116,15 @@
 
 (defn tensor->apl [tensor]
   ;; todo -- gc
+  (def tensor tensor)
   (let [elems (dtype/->reader tensor)
         shape (dtype/shape tensor)
-        atp   (api/apl-value (-> shape dtype/->reader vec))]
-    (doseq [[idx elt] (->>  tensor
-                            tensor/tensor->buffer
-                            (interleave (range))
-                            (partition 2))]
+        atp   (api/apl-value (-> shape dtype/->reader vec))
+        items (->> elems
+                   (interleave (range))
+                   (partition 2))]
+    (tap> {:tensor->apl/items items})
+    (doseq [[idx elt] items]
       (tap> {:tensor->apl/atp atp})
       (tap> {:tensor->apl/idx idx})
       (tap> {:tensor->apl/elt elt})
@@ -131,6 +135,8 @@
     atp))
 
 (comment
+  (set-compound! atp' idx' elt')
+  (set-scalar! atp' idx' elt')
   (add-tap (fn [x]
              (when-let [elt (and (map? x)
                                  (:tensor->apl/elt x))]
@@ -142,7 +148,11 @@
   (add-tap (fn [x]
              (when-let [atp (and (map? x)
                                  (:tensor->apl/atp x))]
-               (def atp' atp)))))
+               (def atp' atp))))
+  (add-tap (fn [x]
+             (when-let [items (and (map? x)
+                                 (:tensor->apl/items x))]
+               (def items' items)))))
 
 (comment
   (def tensor (tensor/->tensor (range 3)))

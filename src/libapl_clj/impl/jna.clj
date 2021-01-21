@@ -1,7 +1,6 @@
 (ns libapl-clj.impl.jna
   (:require [tech.v3.jna :as jna]
             tech.v3.datatype.jna
-            [environ.core :as environ]
             [tech.v3.datatype :as dtype])
   (:import [com.sun.jna Pointer]))
 
@@ -169,7 +168,7 @@ an APL statement."
   set_value
   "Set value of value at index"
   Pointer
-  [new_value long]
+  [new_value jna/ensure-ptr]
   [val APL_value]
   [idx unchecked-int])
 
