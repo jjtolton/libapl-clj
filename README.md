@@ -54,7 +54,7 @@ apl/+
 #tech.v3.tensor<object>[3]
 [5 7 9]
 
-(display! (apl/+ [1 2 3] [4 5 6]))
+(apl/display! (apl/+ [1 2 3] [4 5 6]))
 
 ┏→━━━━┓
 ┃5 7 9┃
@@ -74,7 +74,7 @@ apl/+
   [a a a a a]
   [a a a a a]]]
 
-(display! (apl/⍴ [2 3 5] (first "a")))
+(apl/display! (apl/⍴ [2 3 5] (first "a")))
 ;;=>
 ┏→━━━━┓
 ↓aaaaa┃
