@@ -1,5 +1,7 @@
 (ns libapl-clj.types
   (:require [complex.core :refer [complex]]))
+  
+
 
 org.apache.commons.math3.complex.Complex
 
@@ -13,7 +15,7 @@ org.apache.commons.math3.complex.Complex
 
 (def type->key-type {nil                                      nil
                      Character                                ::char
-                     tech.v3.tensor.Tensor                    ::tensor
+                     tech.v3.Tensor                           ::tensor
                      Integer                                  ::integer
                      Double                                   ::double
                      org.apache.commons.math3.complex.Complex ::complex})
