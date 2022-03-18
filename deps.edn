@@ -1,7 +1,7 @@
 {:paths   ["src" "resources"]
  :deps    {org.clojure/clojure  {:mvn/version "1.10.1"}
-           cnuernber/dtype-next {:mvn/version "6.00-beta-20"}
-           techascent/tech.jna  {:mvn/version "4.05"}
+           cnuernber/dtype-next {:mvn/version "9.017"}
+           techascent/tech.jna  {:mvn/version "4.06"}
            complex/complex      {:mvn/version "0.1.12"}}
  :aliases {:test   {:extra-paths ["test"]}
            :runner {:main-opts  ["-m" "cognitect.test-runner"]
